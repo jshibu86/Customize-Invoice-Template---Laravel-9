@@ -5,298 +5,239 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Invoice Template Builder</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-
-    {{-- SortableJS for drag & drop --}}
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.27/dist/interact.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f0f2f5;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
+            font-family:'Segoe UI',sans-serif;
+            background:#f0f2f5;
+            display:flex;
+            height:100vh;
+            overflow:hidden;
         }
 
-        /* ── LEFT PANEL ── */
+        /* ── PANEL ── */
         #panel {
-            width: 320px;
-            min-width: 320px;
-            background: #1e1e2e;
-            color: #cdd6f4;
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
+            width:260px; min-width:260px;
+            background:#1e1e2e; color:#cdd6f4;
+            display:flex; flex-direction:column;
+            overflow-y:auto;
         }
-
         #panel-header {
-            padding: 20px;
-            background: #181825;
-            border-bottom: 1px solid #313244;
-            font-size: 16px;
-            font-weight: 700;
-            color: #cba6f7;
-            letter-spacing: 0.5px;
+            padding:13px 16px;
+            background:#181825;
+            border-bottom:1px solid #313244;
+            font-size:14px; font-weight:700; color:#cba6f7;
         }
-
-        .section {
-            padding: 16px 20px;
-            border-bottom: 1px solid #313244;
-        }
-
+        .section { padding:12px 14px; border-bottom:1px solid #313244; }
         .section-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #6c7086;
-            margin-bottom: 12px;
-            font-weight: 600;
+            font-size:9px; text-transform:uppercase;
+            letter-spacing:1px; color:#6c7086;
+            margin-bottom:8px; font-weight:600;
         }
-
-        label {
-            display: block;
-            font-size: 12px;
-            color: #a6adc8;
-            margin-bottom: 4px;
-            margin-top: 10px;
+        .panel-label {
+            display:block; font-size:10px;
+            color:#a6adc8; margin-bottom:2px; margin-top:7px;
         }
-
-        input[type="text"],
         select {
-            width: 100%;
-            padding: 8px 10px;
-            background: #313244;
-            border: 1px solid #45475a;
-            border-radius: 6px;
-            color: #cdd6f4;
-            font-size: 13px;
-            outline: none;
+            width:100%; padding:6px 8px;
+            background:#313244; border:1px solid #45475a;
+            border-radius:5px; color:#cdd6f4;
+            font-size:11px; outline:none;
         }
-
         input[type="color"] {
-            width: 100%;
-            height: 38px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            background: #313244;
-            padding: 2px;
+            width:100%; height:32px; border:none;
+            border-radius:5px; cursor:pointer;
+            background:#313244; padding:2px;
         }
-
         .logo-upload {
-            width: 100%;
-            padding: 20px;
-            border: 2px dashed #45475a;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            color: #6c7086;
-            font-size: 12px;
-            transition: border-color 0.2s;
-            margin-top: 10px;
+            width:100%; padding:10px;
+            border:2px dashed #45475a; border-radius:6px;
+            text-align:center; cursor:pointer;
+            color:#6c7086; font-size:10px;
+            transition:border-color 0.2s; margin-top:6px;
+        }
+        .logo-upload:hover { border-color:#cba6f7; color:#cba6f7; }
+        #logo-preview-panel {
+            max-width:100%; max-height:40px;
+            margin-top:5px; border-radius:3px; display:none;
         }
 
-        .logo-upload:hover { border-color: #cba6f7; color: #cba6f7; }
-
-        #logo-preview {
-            max-width: 100%;
-            max-height: 60px;
-            margin-top: 8px;
-            border-radius: 4px;
-            display: none;
+        /* block visibility toggles */
+        .vis-item {
+            display:flex; align-items:center;
+            justify-content:space-between;
+            padding:5px 8px;
+            background:#313244; border-radius:5px;
+            margin-bottom:4px; font-size:11px;
         }
-
-        /* ── BLOCKS LIST ── */
-        .block-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 12px;
-            background: #313244;
-            border-radius: 8px;
-            margin-bottom: 6px;
-            cursor: grab;
-            border: 1px solid #45475a;
-            transition: background 0.15s;
-            user-select: none;
-        }
-
-        .block-item:hover { background: #3d3d56; }
-        .block-item.sortable-ghost { opacity: 0.3; }
-        .block-item.sortable-chosen { background: #45475a; }
-
-        .block-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-        }
-
-        .drag-handle { color: #6c7086; font-size: 16px; cursor: grab; }
-
-        .toggle {
-            position: relative;
-            width: 36px;
-            height: 20px;
-        }
-
-        .toggle input { display: none; }
-
+        .toggle { position:relative; width:30px; height:16px; flex-shrink:0; }
+        .toggle input { display:none; }
         .toggle-slider {
-            position: absolute;
-            inset: 0;
-            background: #45475a;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: 0.2s;
+            position:absolute; inset:0;
+            background:#45475a; border-radius:16px;
+            cursor:pointer; transition:0.2s;
         }
-
         .toggle-slider:before {
-            content: '';
-            position: absolute;
-            width: 14px;
-            height: 14px;
-            background: white;
-            border-radius: 50%;
-            top: 3px;
-            left: 3px;
-            transition: 0.2s;
+            content:''; position:absolute;
+            width:10px; height:10px; background:white;
+            border-radius:50%; top:3px; left:3px; transition:0.2s;
         }
+        .toggle input:checked + .toggle-slider { background:#a6e3a1; }
+        .toggle input:checked + .toggle-slider:before { transform:translateX(14px); }
 
-        .toggle input:checked + .toggle-slider { background: #a6e3a1; }
-        .toggle input:checked + .toggle-slider:before { transform: translateX(16px); }
-
-        /* ── FIELDS LIST ── */
+        /* fields */
         .field-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            background: #313244;
-            border-radius: 6px;
-            margin-bottom: 5px;
-            cursor: grab;
-            border: 1px solid #45475a;
-            font-size: 12px;
+            display:flex; align-items:center; gap:6px;
+            padding:6px 8px; background:#313244;
+            border-radius:5px; margin-bottom:4px;
+            cursor:grab; border:1px solid #45475a;
+            font-size:10px; user-select:none;
         }
+        .field-item:hover { background:#3d3d56; }
+        .field-item.sortable-ghost { opacity:0.25; }
+        .drag-icon { color:#585b70; font-size:12px; pointer-events:none; }
 
-        .field-item:hover { background: #3d3d56; }
-        .field-item.sortable-ghost { opacity: 0.3; }
-
-        /* ── NOTES ── */
         textarea {
-            width: 100%;
-            padding: 10px;
-            background: #313244;
-            border: 1px solid #45475a;
-            border-radius: 6px;
-            color: #cdd6f4;
-            font-size: 12px;
-            resize: vertical;
-            min-height: 80px;
-            outline: none;
-            font-family: inherit;
+            width:100%; padding:6px 8px;
+            background:#313244; border:1px solid #45475a;
+            border-radius:5px; color:#cdd6f4;
+            font-size:10px; resize:vertical;
+            min-height:55px; outline:none; font-family:inherit;
         }
 
-        /* ── SAVE BUTTON ── */
         #save-btn {
-            margin: 16px 20px;
-            padding: 12px;
-            background: #cba6f7;
-            color: #1e1e2e;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            width: calc(100% - 40px);
-            transition: background 0.2s;
+            margin:12px 14px 4px;
+            padding:10px; background:#cba6f7;
+            color:#1e1e2e; border:none;
+            border-radius:7px; font-size:12px;
+            font-weight:700; cursor:pointer;
+            width:calc(100% - 28px);
+            transition:background 0.2s;
         }
-
-        #save-btn:hover { background: #b48de0; }
-
+        #save-btn:hover { background:#b48de0; }
         #save-msg {
-            text-align: center;
-            font-size: 12px;
-            padding-bottom: 12px;
-            color: #a6e3a1;
-            display: none;
+            text-align:center; font-size:10px;
+            padding-bottom:8px; color:#a6e3a1; display:none;
         }
 
-        /* ── RIGHT PREVIEW ── */
-        #preview-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        /* ── CANVAS AREA ── */
+        #canvas-area {
+            flex:1; display:flex;
+            flex-direction:column; overflow:hidden;
+            background:#e5e7eb;
+        }
+        #canvas-topbar {
+            background:#fff; padding:9px 14px;
+            border-bottom:1px solid #e0e0e0;
+            display:flex; align-items:center;
+            justify-content:space-between; flex-shrink:0;
+        }
+        #canvas-topbar span { font-size:11px; color:#888; }
+        .btn-pdf {
+            padding:6px 12px; background:#1e1e2e;
+            color:#fff; border:none; border-radius:5px;
+            font-size:11px; cursor:pointer;
+            font-weight:600; text-decoration:none;
         }
 
-        #preview-topbar {
-            background: #fff;
-            padding: 12px 20px;
-            border-bottom: 1px solid #e0e0e0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        /* ── A4 SCROLL WRAPPER ── */
+        #paper-scroll {
+            flex:1; overflow:auto;
+            padding:24px; display:flex;
+            justify-content:center; align-items:flex-start;
         }
 
-        #preview-topbar span {
-            font-size: 13px;
-            color: #888;
+        /* ── A4 PAPER ── */
+        #a4-paper {
+            background:#fff;
+            width:794px;
+            min-height:1123px;
+            position:relative;
+            box-shadow:0 4px 24px rgba(0,0,0,0.13);
+            border-radius:3px;
+            flex-shrink:0;
         }
 
-        #open-pdf-btn {
-            padding: 8px 16px;
-            background: #1e1e2e;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            cursor: pointer;
-            text-decoration: none;
+        /* ── BLOCKS ── */
+        .inv-block {
+            position:absolute;
+            border:2px dashed transparent;
+            border-radius:5px;
+            overflow:hidden;
+            transition:border-color 0.15s;
+            cursor:move;
+            background:#fff;
+            padding:10px;
+            font-size:12px;
+            color:#333;
         }
+        .inv-block:hover {
+            border-color:#cba6f7;
+            z-index:10;
+        }
+        .inv-block.active {
+            border-color:#cba6f7;
+            z-index:20;
+            box-shadow:0 2px 12px rgba(203,166,247,0.25);
+        }
+        .inv-block.hidden-block { display:none; }
 
-        #preview-frame {
-            flex: 1;
-            width: 100%;
-            border: none;
-            background: #e5e7eb;
+        /* block label */
+        .blk-label {
+            display:none;
+            position:absolute;
+            top:-11px; left:6px;
+            background:#cba6f7; color:#1e1e2e;
+            font-size:8px; font-weight:800;
+            padding:1px 7px; border-radius:3px;
+            text-transform:uppercase;
+            letter-spacing:0.5px;
+            pointer-events:none; z-index:30;
+            white-space:nowrap;
         }
+        .inv-block:hover .blk-label,
+        .inv-block.active .blk-label { display:block; }
+
+        /* resize handle */
+        .resize-handle {
+            position:absolute;
+            bottom:0; right:0;
+            width:14px; height:14px;
+            cursor:se-resize;
+            background:linear-gradient(135deg, transparent 50%, #cba6f7 50%);
+            border-radius:0 0 4px 0;
+            opacity:0;
+            transition:opacity 0.15s;
+        }
+        .inv-block:hover .resize-handle,
+        .inv-block.active .resize-handle { opacity:1; }
     </style>
 </head>
 <body>
 
-{{-- ══════════════════════════════════════ --}}
-{{-- LEFT PANEL                            --}}
-{{-- ══════════════════════════════════════ --}}
+{{-- ════ LEFT PANEL ════ --}}
 <div id="panel">
     <div id="panel-header">🧾 Invoice Builder</div>
 
     {{-- BRANDING --}}
     <div class="section">
         <div class="section-title">🎨 Branding</div>
-
-        {{-- Logo Upload --}}
-        <label>Company Logo</label>
+        <span class="panel-label">Logo</span>
         <div class="logo-upload" onclick="document.getElementById('logo-input').click()">
-            <div>📁 Click to upload logo</div>
-            <div style="font-size:10px; margin-top:4px;">PNG, JPG up to 2MB</div>
+            📁 Click to upload &nbsp;<span style="font-size:9px;color:#6c7086">PNG/JPG 2MB</span>
         </div>
         <input type="file" id="logo-input" accept="image/*" style="display:none">
-        <img id="logo-preview" src="" alt="Logo Preview">
+        <img id="logo-preview-panel" src="" alt="">
 
-        {{-- Colors --}}
-        <label>Primary Color</label>
+        <span class="panel-label">Primary Color</span>
         <input type="color" id="primary-color" value="{{ $template->primary_color ?? '#3B82F6' }}">
 
-        <label>Secondary Color</label>
+        <span class="panel-label">Secondary Color</span>
         <input type="color" id="secondary-color" value="{{ $template->secondary_color ?? '#1E40AF' }}">
 
-        {{-- Font --}}
-        <label>Font Family</label>
-        <select id="font-family">
+        <span class="panel-label">Font</span>
+        <select id="font-family" onchange="document.getElementById('a4-paper').style.fontFamily=this.value">
             @foreach(['DejaVu Sans','Arial','Courier','Helvetica','Times New Roman'] as $font)
                 <option value="{{ $font }}"
                     {{ ($template->font_family ?? 'DejaVu Sans') === $font ? 'selected' : '' }}>
@@ -306,173 +247,250 @@
         </select>
     </div>
 
-    {{-- BLOCKS --}}
+    {{-- BLOCK VISIBILITY --}}
     <div class="section">
-        <div class="section-title">📦 Blocks — drag to reorder</div>
-        <div id="blocks-list">
-            @foreach(collect($template->layout['blocks'])->sortBy('position') as $block)
-                <div class="block-item" data-id="{{ $block['id'] }}">
-                    <div class="block-left">
-                        <span class="drag-handle">⠿</span>
-                        <span>{{ ucfirst(str_replace('_', ' ', $block['id'])) }}</span>
-                    </div>
-                    <label class="toggle">
-                        <input type="checkbox"
-                               class="block-toggle"
-                               data-id="{{ $block['id'] }}"
-                               {{ $block['visible'] ? 'checked' : '' }}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            @endforeach
+        <div class="section-title">👁 Block Visibility</div>
+        @foreach(collect($template->layout['blocks'])->sortBy('position') as $block)
+        <div class="vis-item">
+            <span>{{ ucfirst(str_replace('_', ' ', $block['id'])) }}</span>
+            <label class="toggle">
+                <input type="checkbox" class="vis-toggle"
+                       data-id="{{ $block['id'] }}"
+                       {{ $block['visible'] ? 'checked' : '' }}
+                       onchange="toggleBlock('{{ $block['id'] }}', this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
         </div>
+        @endforeach
     </div>
 
     {{-- FIELDS --}}
     <div class="section">
-        <div class="section-title">🔢 Fields — drag to reorder</div>
+        <div class="section-title">🔢 Fields</div>
         <div id="fields-list">
             @foreach(collect($template->fields_config)->sortBy('order') as $key => $field)
-                <div class="field-item" data-key="{{ $key }}">
-                    <span class="drag-handle" style="color:#6c7086;">⠿</span>
-                    <label class="toggle" style="margin:0;">
-                        <input type="checkbox"
-                               class="field-toggle"
-                               data-key="{{ $key }}"
-                               {{ $field['visible'] ? 'checked' : '' }}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span style="font-size:12px;">{{ $field['label'] }}</span>
-                </div>
+            <div class="field-item" data-key="{{ $key }}">
+                <span class="drag-icon">⠿</span>
+                <label class="toggle" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="field-toggle"
+                           {{ $field['visible'] ? 'checked' : '' }}>
+                    <span class="toggle-slider"></span>
+                </label>
+                <span>{{ $field['label'] }}</span>
+            </div>
             @endforeach
         </div>
     </div>
 
     {{-- NOTES --}}
     <div class="section">
-        <div class="section-title">📝 Notes / Footer Text</div>
-        <textarea id="notes-text" placeholder="Enter notes or terms...">{{ old('notes', '') }}</textarea>
+        <div class="section-title">📝 Notes</div>
+        <textarea id="notes-text"
+                  oninput="updateNotes(this.value)"
+                  placeholder="Notes / terms...">{{ $template->notes ?? '' }}</textarea>
     </div>
 
-    {{-- SAVE --}}
     <button id="save-btn" onclick="saveTemplate()">💾 Save Template</button>
-    <div id="save-msg">✅ Template saved successfully!</div>
+    <div id="save-msg">✅ Saved!</div>
 </div>
 
-{{-- ══════════════════════════════════════ --}}
-{{-- RIGHT PREVIEW                         --}}
-{{-- ══════════════════════════════════════ --}}
-<div id="preview-area">
-    <div id="preview-topbar">
-        <span>🔍 Live Preview — updates on save</span>
-        <a id="open-pdf-btn" href="/invoice/preview" target="_blank">⬇ Download PDF</a>
+{{-- ════ A4 CANVAS ════ --}}
+<div id="canvas-area">
+    <div id="canvas-topbar">
+        <span>↔ Drag to move &nbsp;|&nbsp; ↘ Corner to resize &nbsp;|&nbsp; 👁 Toggle visibility in panel</span>
+        <a class="btn-pdf" href="/invoice/preview" target="_blank">⬇ Download PDF</a>
     </div>
-    <iframe id="preview-frame" src="/invoice/preview"></iframe>
+    <div id="paper-scroll">
+        <div id="a4-paper">
+
+            @php
+                $blockDefs = collect($template->layout['blocks'])->sortBy('position');
+                $fields    = collect($template->fields_config)->where('visible', true)->sortBy('order');
+            @endphp
+
+            @foreach($blockDefs as $block)
+                @php
+                    $bid      = $block['id'];
+                    $visible  = $block['visible'] ?? true;
+                    $x        = $block['x'] ?? 0;
+                    $y        = $block['y'] ?? 0;
+                    $w        = $block['w'] ?? 300;
+                    $h        = $block['h'] ?? 100;
+                    $viewPath = 'invoices.blocks.' . $bid;
+                @endphp
+
+                @if(view()->exists($viewPath))
+                <div class="inv-block {{ !$visible ? 'hidden-block' : '' }}"
+                     id="blk-{{ $bid }}"
+                     data-id="{{ $bid }}"
+                     style="left:{{ $x }}px; top:{{ $y }}px;
+                            width:{{ $w }}px; height:{{ $h }}px;">
+                    <div class="blk-label">{{ ucfirst(str_replace('_',' ',$bid)) }}</div>
+                    @include($viewPath, [
+                        'invoice'  => $invoice,
+                        'template' => $template,
+                        'fields'   => $fields,
+                        'forPdf'   => false,
+                    ])
+                    <div class="resize-handle"></div>
+                </div>
+                @endif
+            @endforeach
+
+        </div>
+    </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.27/dist/interact.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
-    // ── Drag & Drop: Blocks ──
-    Sortable.create(document.getElementById('blocks-list'), {
-        animation: 150,
-        handle: '.drag-handle',
-        ghostClass: 'sortable-ghost',
-        chosenClass: 'sortable-chosen',
-    });
+const originalFields = @json($template->fields_config);
 
-    // ── Drag & Drop: Fields ──
-    Sortable.create(document.getElementById('fields-list'), {
-        animation: 150,
-        handle: '.drag-handle',
-        ghostClass: 'sortable-ghost',
-    });
-
-    // ── Logo Preview ──
-    document.getElementById('logo-input').addEventListener('change', function () {
-        const file = this.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-            const preview = document.getElementById('logo-preview');
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    });
-
-    // ── Collect Layout from DOM ──
-    function getLayoutConfig() {
-        const blocks = [];
-        document.querySelectorAll('#blocks-list .block-item').forEach((el, index) => {
-            blocks.push({
-                id:       el.dataset.id,
-                position: index + 1,
-                visible:  el.querySelector('.block-toggle').checked,
-            });
-        });
-        return { blocks };
+// ── Interact.js: drag + resize every block ──
+interact('.inv-block').draggable({
+    listeners: {
+        start(e) { e.target.classList.add('active'); },
+        move(e) {
+            const el = e.target;
+            const x = (parseFloat(el.style.left) || 0) + e.dx;
+            const y = (parseFloat(el.style.top)  || 0) + e.dy;
+            el.style.left = Math.max(0, x) + 'px';
+            el.style.top  = Math.max(0, y) + 'px';
+        },
+        end(e) { e.target.classList.remove('active'); }
     }
-
-    // ── Collect Fields from DOM ──
-    function getFieldsConfig() {
-        const fields = {};
-        // get original labels from server-rendered data
-        const originalFields = @json($template->fields_config);
-
-        document.querySelectorAll('#fields-list .field-item').forEach((el, index) => {
-            const key = el.dataset.key;
-            fields[key] = {
-                visible: el.querySelector('.field-toggle').checked,
-                order:   index + 1,
-                label:   originalFields[key]?.label ?? key,
-            };
-        });
-        return fields;
+}).resizable({
+    edges: { right: true, bottom: true, bottomRight: '.resize-handle' },
+    modifiers: [
+        interact.modifiers.restrictSize({ minWidth: 80, minHeight: 40 })
+    ],
+    listeners: {
+        start(e) { e.target.classList.add('active'); },
+        move(e) {
+            const el = e.target;
+            el.style.width  = e.rect.width  + 'px';
+            el.style.height = e.rect.height + 'px';
+        },
+        end(e) { e.target.classList.remove('active'); }
     }
+});
 
-    // ── Save Template ──
-    function saveTemplate() {
-        const btn = document.getElementById('save-btn');
-        btn.textContent = '⏳ Saving...';
-        btn.disabled = true;
+// ── Toggle block visibility ──
+function toggleBlock(id, visible) {
+    const el = document.getElementById('blk-' + id);
+    if (el) el.classList.toggle('hidden-block', !visible);
+}
 
-        const formData = new FormData();
-        formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-        formData.append('primary_color',   document.getElementById('primary-color').value);
-        formData.append('secondary_color', document.getElementById('secondary-color').value);
-        formData.append('font_family',     document.getElementById('font-family').value);
-        formData.append('layout',          JSON.stringify(getLayoutConfig()));
-        formData.append('fields_config',   JSON.stringify(getFieldsConfig()));
-        formData.append('notes',           document.getElementById('notes-text').value);
+// ── Logo upload → live update on paper ──
+document.getElementById('logo-input').addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const panel = document.getElementById('logo-preview-panel');
+        panel.src = e.target.result;
+        panel.style.display = 'block';
 
-        const logoFile = document.getElementById('logo-input').files[0];
-        if (logoFile) formData.append('logo', logoFile);
-
-        fetch('/invoice/save', {
-            method: 'POST',
-            body: formData,
-        })
-        .then(res => res.json())
-        .then(data => {
-            btn.textContent = '💾 Save Template';
-            btn.disabled = false;
-
-            if (data.success) {
-                const msg = document.getElementById('save-msg');
-                msg.style.display = 'block';
-                setTimeout(() => msg.style.display = 'none', 3000);
-
-                // Refresh preview iframe
-                document.getElementById('preview-frame').src =
-                    '/invoice/preview?t=' + Date.now();
+        const logoBlk = document.querySelector('#blk-logo img');
+        if (logoBlk) {
+            logoBlk.src = e.target.result;
+        } else {
+            const logoBlkDiv = document.querySelector('#blk-logo div:not(.blk-label):not(.resize-handle)');
+            if (logoBlkDiv) {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.cssText = 'max-height:70px;max-width:100%;display:block;';
+                logoBlkDiv.replaceWith(img);
             }
-        })
-        .catch(() => {
-            btn.textContent = '💾 Save Template';
-            btn.disabled = false;
-            alert('Something went wrong. Please try again.');
-        });
-    }
-</script>
+        }
+    };
+    reader.readAsDataURL(file);
+});
 
+// ── Live notes update ──
+function updateNotes(val) {
+    const el = document.querySelector('#blk-notes');
+    if (el) {
+        const content = el.querySelectorAll('div:not(.blk-label):not(.resize-handle)');
+        if (content.length > 0) {
+            content[content.length - 1].textContent = val;
+        }
+    }
+}
+
+// ── Fields sortable ──
+Sortable.create(document.getElementById('fields-list'), {
+    animation: 150,
+    ghostClass: 'sortable-ghost',
+    handle: '.drag-icon',
+});
+
+// ── Collect block positions from DOM ──
+function getLayoutConfig() {
+    const blocks = [];
+    document.querySelectorAll('#a4-paper .inv-block').forEach((el, idx) => {
+        blocks.push({
+            id:       el.dataset.id,
+            position: idx + 1,
+            visible:  !el.classList.contains('hidden-block'),
+            x: Math.round(parseFloat(el.style.left) || 0),
+            y: Math.round(parseFloat(el.style.top)  || 0),
+            w: Math.round(parseFloat(el.style.width)  || 200),
+            h: Math.round(parseFloat(el.style.height) || 100),
+        });
+    });
+    return { blocks };
+}
+
+// ── Collect fields ──
+function getFieldsConfig() {
+    const fields = {};
+    document.querySelectorAll('#fields-list .field-item').forEach((el, idx) => {
+        const key = el.dataset.key;
+        fields[key] = {
+            visible: el.querySelector('.field-toggle').checked,
+            order:   idx + 1,
+            label:   originalFields[key]?.label ?? key,
+        };
+    });
+    return fields;
+}
+
+// ── Save ──
+function saveTemplate() {
+    const btn = document.getElementById('save-btn');
+    btn.textContent = '⏳ Saving...';
+    btn.disabled = true;
+
+    const fd = new FormData();
+    fd.append('_token',         document.querySelector('meta[name="csrf-token"]').content);
+    fd.append('primary_color',  document.getElementById('primary-color').value);
+    fd.append('secondary_color',document.getElementById('secondary-color').value);
+    fd.append('font_family',    document.getElementById('font-family').value);
+    fd.append('layout',         JSON.stringify(getLayoutConfig()));
+    fd.append('fields_config',  JSON.stringify(getFieldsConfig()));
+    fd.append('notes',          document.getElementById('notes-text').value);
+
+    const logoFile = document.getElementById('logo-input').files[0];
+    if (logoFile) fd.append('logo', logoFile);
+
+    fetch('/invoice/save', { method:'POST', body:fd })
+    .then(r => r.json())
+    .then(data => {
+        btn.textContent = '💾 Save Template';
+        btn.disabled = false;
+        if (data.success) {
+            const msg = document.getElementById('save-msg');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 3000);
+        }
+    })
+    .catch(() => {
+        btn.textContent = '💾 Save Template';
+        btn.disabled = false;
+        alert('Something went wrong.');
+    });
+}
+</script>
 </body>
 </html>

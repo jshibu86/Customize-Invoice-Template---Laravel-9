@@ -22,3 +22,5 @@ use App\Http\Controllers\InvoiceTemplateController;
 Route::get('/invoice/preview',  [InvoiceTemplateController::class, 'preview']);
 Route::get('/invoice/builder',  [InvoiceTemplateController::class, 'builder']);
 Route::post('/invoice/save',    [InvoiceTemplateController::class, 'save']);
+
+Route::get('/invoice/preview-html', [InvoiceTemplateController::class, 'previewHtml']);
