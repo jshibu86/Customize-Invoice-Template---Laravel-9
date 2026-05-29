@@ -298,11 +298,11 @@
 <div id="canvas-area">
     <div id="canvas-topbar">
         <span>↔ Drag to move &nbsp;|&nbsp; ↘ Corner to resize &nbsp;|&nbsp; 👁 Toggle visibility in panel</span>
-        <a class="btn-pdf" href="/invoice/preview" target="_blank">⬇ Download PDF</a>
+        <!-- <a class="btn-pdf" href="/invoice/preview" target="_blank">⬇ Download PDF</a> -->
+         <button type="button" class="btn-pdf">⬇ Download PDF</button>
     </div>
     <div id="paper-scroll">
-        <div id="a4-paper">
-
+        <div id="a4-paper" style="background:#fff !important;border:none !important;">
             @php
                 $blockDefs = collect($template->layout['blocks'])->sortBy('position');
                 $fields    = collect($template->fields_config)->where('visible', true)->sortBy('order');
@@ -344,153 +344,172 @@
 <script src="https://cdn.jsdelivr.net/npm/interactjs@1.10.27/dist/interact.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
-const originalFields = @json($template->fields_config);
+    const originalFields = @json($template->fields_config);
 
-// ── Interact.js: drag + resize every block ──
-interact('.inv-block').draggable({
-    listeners: {
-        start(e) { e.target.classList.add('active'); },
-        move(e) {
-            const el = e.target;
-            const x = (parseFloat(el.style.left) || 0) + e.dx;
-            const y = (parseFloat(el.style.top)  || 0) + e.dy;
-            el.style.left = Math.max(0, x) + 'px';
-            el.style.top  = Math.max(0, y) + 'px';
-        },
-        end(e) { e.target.classList.remove('active'); }
+    // ── Interact.js: drag + resize every block ──
+    interact('.inv-block').draggable({
+        listeners: {
+            start(e) { e.target.classList.add('active'); },
+            move(e) {
+                const el = e.target;
+                const x = (parseFloat(el.style.left) || 0) + e.dx;
+                const y = (parseFloat(el.style.top)  || 0) + e.dy;
+                el.style.left = Math.max(0, x) + 'px';
+                el.style.top  = Math.max(0, y) + 'px';
+            },
+            end(e) { e.target.classList.remove('active'); }
+        }
+    }).resizable({
+        edges: { right: true, bottom: true, bottomRight: '.resize-handle' },
+        modifiers: [
+            interact.modifiers.restrictSize({ minWidth: 80, minHeight: 40 })
+        ],
+        listeners: {
+            start(e) { e.target.classList.add('active'); },
+            move(e) {
+                const el = e.target;
+                el.style.width  = e.rect.width  + 'px';
+                el.style.height = e.rect.height + 'px';
+            },
+            end(e) { e.target.classList.remove('active'); }
+        }
+    });
+
+    // ── Toggle block visibility ──
+    function toggleBlock(id, visible) {
+        const el = document.getElementById('blk-' + id);
+        if (el) el.classList.toggle('hidden-block', !visible);
     }
-}).resizable({
-    edges: { right: true, bottom: true, bottomRight: '.resize-handle' },
-    modifiers: [
-        interact.modifiers.restrictSize({ minWidth: 80, minHeight: 40 })
-    ],
-    listeners: {
-        start(e) { e.target.classList.add('active'); },
-        move(e) {
-            const el = e.target;
-            el.style.width  = e.rect.width  + 'px';
-            el.style.height = e.rect.height + 'px';
-        },
-        end(e) { e.target.classList.remove('active'); }
-    }
-});
 
-// ── Toggle block visibility ──
-function toggleBlock(id, visible) {
-    const el = document.getElementById('blk-' + id);
-    if (el) el.classList.toggle('hidden-block', !visible);
-}
+    // ── Logo upload → live update on paper ──
+    document.getElementById('logo-input').addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            const panel = document.getElementById('logo-preview-panel');
+            panel.src = e.target.result;
+            panel.style.display = 'block';
 
-// ── Logo upload → live update on paper ──
-document.getElementById('logo-input').addEventListener('change', function () {
-    const file = this.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-        const panel = document.getElementById('logo-preview-panel');
-        panel.src = e.target.result;
-        panel.style.display = 'block';
+            const logoBlk = document.querySelector('#blk-logo img');
+            if (logoBlk) {
+                logoBlk.src = e.target.result;
+            } else {
+                const logoBlkDiv = document.querySelector('#blk-logo div:not(.blk-label):not(.resize-handle)');
+                if (logoBlkDiv) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.cssText = 'max-height:70px;max-width:100%;display:block;';
+                    logoBlkDiv.replaceWith(img);
+                }
+            }
+        };
+        reader.readAsDataURL(file);
+    });
 
-        const logoBlk = document.querySelector('#blk-logo img');
-        if (logoBlk) {
-            logoBlk.src = e.target.result;
-        } else {
-            const logoBlkDiv = document.querySelector('#blk-logo div:not(.blk-label):not(.resize-handle)');
-            if (logoBlkDiv) {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.cssText = 'max-height:70px;max-width:100%;display:block;';
-                logoBlkDiv.replaceWith(img);
+    // ── Live notes update ──
+    function updateNotes(val) {
+        const el = document.querySelector('#blk-notes');
+        if (el) {
+            const content = el.querySelectorAll('div:not(.blk-label):not(.resize-handle)');
+            if (content.length > 0) {
+                content[content.length - 1].textContent = val;
             }
         }
-    };
-    reader.readAsDataURL(file);
-});
-
-// ── Live notes update ──
-function updateNotes(val) {
-    const el = document.querySelector('#blk-notes');
-    if (el) {
-        const content = el.querySelectorAll('div:not(.blk-label):not(.resize-handle)');
-        if (content.length > 0) {
-            content[content.length - 1].textContent = val;
-        }
     }
-}
 
-// ── Fields sortable ──
-Sortable.create(document.getElementById('fields-list'), {
-    animation: 150,
-    ghostClass: 'sortable-ghost',
-    handle: '.drag-icon',
-});
+    // ── Fields sortable ──
+    Sortable.create(document.getElementById('fields-list'), {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        handle: '.drag-icon',
+    });
 
-// ── Collect block positions from DOM ──
-function getLayoutConfig() {
-    const blocks = [];
-    document.querySelectorAll('#a4-paper .inv-block').forEach((el, idx) => {
-        blocks.push({
-            id:       el.dataset.id,
-            position: idx + 1,
-            visible:  !el.classList.contains('hidden-block'),
-            x: Math.round(parseFloat(el.style.left) || 0),
-            y: Math.round(parseFloat(el.style.top)  || 0),
-            w: Math.round(parseFloat(el.style.width)  || 200),
-            h: Math.round(parseFloat(el.style.height) || 100),
+    // ── Collect block positions from DOM ──
+    function getLayoutConfig() {
+        const blocks = [];
+        document.querySelectorAll('#a4-paper .inv-block').forEach((el, idx) => {
+            blocks.push({
+                id:       el.dataset.id,
+                position: idx + 1,
+                visible:  !el.classList.contains('hidden-block'),
+                x: Math.round(parseFloat(el.style.left) || 0),
+                y: Math.round(parseFloat(el.style.top)  || 0),
+                w: Math.round(parseFloat(el.style.width)  || 200),
+                h: Math.round(parseFloat(el.style.height) || 100),
+            });
         });
-    });
-    return { blocks };
+        return { blocks };
+    }
+
+    // ── Collect fields ──
+    function getFieldsConfig() {
+        const fields = {};
+        document.querySelectorAll('#fields-list .field-item').forEach((el, idx) => {
+            const key = el.dataset.key;
+            fields[key] = {
+                visible: el.querySelector('.field-toggle').checked,
+                order:   idx + 1,
+                label:   originalFields[key]?.label ?? key,
+            };
+        });
+        return fields;
+    }
+
+    // ── Save ──
+    function saveTemplate() {
+        const btn = document.getElementById('save-btn');
+        btn.textContent = '⏳ Saving...';
+        btn.disabled = true;
+
+        const fd = new FormData();
+        fd.append('_token',         document.querySelector('meta[name="csrf-token"]').content);
+        fd.append('primary_color',  document.getElementById('primary-color').value);
+        fd.append('secondary_color',document.getElementById('secondary-color').value);
+        fd.append('font_family',    document.getElementById('font-family').value);
+        fd.append('layout',         JSON.stringify(getLayoutConfig()));
+        fd.append('fields_config',  JSON.stringify(getFieldsConfig()));
+        fd.append('notes',          document.getElementById('notes-text').value);
+
+        const logoFile = document.getElementById('logo-input').files[0];
+        if (logoFile) fd.append('logo', logoFile);
+
+        fetch('/invoice/save', { method:'POST', body:fd })
+        .then(r => r.json())
+        .then(data => {
+            btn.textContent = '💾 Save Template';
+            btn.disabled = false;
+            if (data.success) {
+                const msg = document.getElementById('save-msg');
+                msg.style.display = 'block';
+                setTimeout(() => msg.style.display = 'none', 3000);
+            }
+        })
+        .catch((error) => {
+            btn.textContent = '💾 Save Template';
+            btn.disabled = false;
+            console.log("error:",error);
+            alert('Something went wrong.');
+        });
+    }
+</script>
+<script>
+    // ── Print ──
+function printInvoice() {
+
+    let printContents = document.getElementById('a4-paper').outerHTML;
+    let originalContents = document.body.innerHTML;
+
+    document.body.innerHTML = printContents;
+
+    window.print();
+
+    document.body.innerHTML = originalContents;
+
+    location.reload();
 }
 
-// ── Collect fields ──
-function getFieldsConfig() {
-    const fields = {};
-    document.querySelectorAll('#fields-list .field-item').forEach((el, idx) => {
-        const key = el.dataset.key;
-        fields[key] = {
-            visible: el.querySelector('.field-toggle').checked,
-            order:   idx + 1,
-            label:   originalFields[key]?.label ?? key,
-        };
-    });
-    return fields;
-}
-
-// ── Save ──
-function saveTemplate() {
-    const btn = document.getElementById('save-btn');
-    btn.textContent = '⏳ Saving...';
-    btn.disabled = true;
-
-    const fd = new FormData();
-    fd.append('_token',         document.querySelector('meta[name="csrf-token"]').content);
-    fd.append('primary_color',  document.getElementById('primary-color').value);
-    fd.append('secondary_color',document.getElementById('secondary-color').value);
-    fd.append('font_family',    document.getElementById('font-family').value);
-    fd.append('layout',         JSON.stringify(getLayoutConfig()));
-    fd.append('fields_config',  JSON.stringify(getFieldsConfig()));
-    fd.append('notes',          document.getElementById('notes-text').value);
-
-    const logoFile = document.getElementById('logo-input').files[0];
-    if (logoFile) fd.append('logo', logoFile);
-
-    fetch('/invoice/save', { method:'POST', body:fd })
-    .then(r => r.json())
-    .then(data => {
-        btn.textContent = '💾 Save Template';
-        btn.disabled = false;
-        if (data.success) {
-            const msg = document.getElementById('save-msg');
-            msg.style.display = 'block';
-            setTimeout(() => msg.style.display = 'none', 3000);
-        }
-    })
-    .catch(() => {
-        btn.textContent = '💾 Save Template';
-        btn.disabled = false;
-        alert('Something went wrong.');
-    });
-}
+document.querySelector('.btn-pdf').addEventListener('click', printInvoice);
 </script>
 </body>
 </html>

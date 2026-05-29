@@ -7,28 +7,25 @@ use App\Models\InvoicetemplatesModel as InvoiceTemplate;
 
 class InvoicePdfService
 {
-    public function generate($invoice): \Illuminate\Http\Response
+    public function generate(object $invoice)
     {
         $template = InvoiceTemplate::forSubscriber($invoice->subscriber_id);
 
-        // Sort blocks by position, filter hidden
-        $blocks = collect($template->layout['blocks'])
-            ->where('visible', true)
-            ->sortBy('position')
-            ->values();
+        $rows = \App\Services\InvoiceLayoutConverter::toRows(
+            $template->layout['blocks'] ?? []
+        );
 
-        // Sort fields by order, filter hidden
-        $fields = collect($template->fields_config)
-            ->where('visible', true)
-            ->sortBy('order');
+        $fields = collect($template->fields_config)->sortBy('order');
 
-        $pdf = Pdf::loadView('invoices.dynamic', [
+       $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.dynamic', [
             'invoice'  => $invoice,
             'template' => $template,
-            'blocks'   => $blocks,
+            'rows'     => $rows,
             'fields'   => $fields,
-        ]);
+            'forPdf'   => true,
+        ])
+       ;
 
-        return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
+        return $pdf->download('invoice-' . ($invoice->invoice_number ?? 'preview') . '.pdf');
     }
 }
