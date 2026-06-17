@@ -1,0 +1,29 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "My API",
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/invoice-templates": {
+            "get": {
+                "tags": [
+                    "Invoice Templates"
+                ],
+                "summary": "Get all invoice templates",
+                "operationId": "954f380e32bac3c406a40fea3de1d2a3",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Invoice Templates",
+            "description": "Invoice Templates"
+        }
+    ]
+}

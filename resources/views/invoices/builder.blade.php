@@ -120,6 +120,10 @@
             text-align:center; font-size:10px;
             padding-bottom:8px; color:#a6e3a1; display:none;
         }
+        #save-msg a {
+            color:#cba6f7;
+            font-weight:700;
+        }
 
         /* ── CANVAS AREA ── */
         #canvas-area {
@@ -128,17 +132,34 @@
             background:#e5e7eb;
         }
         #canvas-topbar {
-            background:#fff; padding:9px 14px;
+            background:#fff; padding:10px 16px;
             border-bottom:1px solid #e0e0e0;
             display:flex; align-items:center;
             justify-content:space-between; flex-shrink:0;
+            gap:16px;
         }
-        #canvas-topbar span { font-size:11px; color:#888; }
-        .btn-pdf {
-            padding:6px 12px; background:#1e1e2e;
-            color:#fff; border:none; border-radius:5px;
-            font-size:11px; cursor:pointer;
-            font-weight:600; text-decoration:none;
+        #canvas-topbar span { font-size:12px; color:#667085; }
+        .download-pdf {
+            padding:9px 14px; background:#171827;
+            color:#fff; border:1px solid #171827; border-radius:7px;
+            font-size:12px; cursor:pointer;
+            font-weight:700; text-decoration:none;
+            box-shadow:0 8px 18px rgba(23,24,39,0.16);
+        }
+        .topbar-actions {
+            display:flex; align-items:center; gap:8px;
+            flex-shrink:0;
+        }
+        .btn-secondary {
+            padding:9px 13px; background:#fff;
+            color:#24324b; border:1px solid #cfd8e3;
+            border-radius:7px; font-size:12px;
+            font-weight:700; text-decoration:none;
+            box-shadow:0 5px 14px rgba(15,23,42,0.07);
+        }
+        .btn-secondary:hover,
+        .download-pdf:hover {
+            transform:translateY(-1px);
         }
 
         /* ── A4 SCROLL WRAPPER ── */
@@ -291,15 +312,17 @@
     </div>
 
     <button id="save-btn" onclick="saveTemplate()">💾 Save Template</button>
-    <div id="save-msg">✅ Saved!</div>
+    <div id="save-msg">Saved. <a id="saved-templates-link" href="{{ route('invoice.templates', ['tab' => 'saved']) }}">View saved templates</a></div>
 </div>
 
 {{-- ════ A4 CANVAS ════ --}}
 <div id="canvas-area">
     <div id="canvas-topbar">
         <span>↔ Drag to move &nbsp;|&nbsp; ↘ Corner to resize &nbsp;|&nbsp; 👁 Toggle visibility in panel</span>
-        <!-- <a class="btn-pdf" href="/invoice/preview" target="_blank">⬇ Download PDF</a> -->
-         <button type="button" class="btn-pdf">⬇ Download PDF</button>
+        <div class="topbar-actions">
+            <a id="templates-link" class="btn-secondary" href="{{ route('invoice.templates', ['tab' => 'saved']) }}">Saved Templates</a>
+            <a id="download-link" class="download-pdf" href="{{ route('invoice.preview', $template->id) }}" target="_blank">Download PDF</a>
+        </div>
     </div>
     <div id="paper-scroll">
         <div id="a4-paper" style="background:#fff !important;border:none !important;">
@@ -345,6 +368,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
     const originalFields = @json($template->fields_config);
+    let saveUrl = @json(route('invoice.save', $template->id));
 
     // ── Interact.js: drag + resize every block ──
     interact('.inv-block').draggable({
@@ -382,6 +406,43 @@
     }
 
     // ── Logo upload → live update on paper ──
+    function ensureLogoBlock(src) {
+        let block = document.getElementById('blk-logo');
+
+        if (!block) {
+            block = document.createElement('div');
+            block.className = 'inv-block';
+            block.id = 'blk-logo';
+            block.dataset.id = 'logo';
+            block.style.left = '0px';
+            block.style.top = '0px';
+            block.style.width = '190px';
+            block.style.height = '80px';
+            block.innerHTML = '<div class="blk-label">Logo</div><img alt="Logo" style="max-height:70px;max-width:100%;display:block;"><div class="resize-handle"></div>';
+            document.getElementById('a4-paper').appendChild(block);
+        }
+
+        block.classList.remove('hidden-block');
+
+        const toggle = document.querySelector('.vis-toggle[data-id="logo"]');
+        if (toggle) toggle.checked = true;
+
+        let img = block.querySelector('img');
+        if (!img) {
+            img = document.createElement('img');
+            img.alt = 'Logo';
+            img.style.cssText = 'max-height:70px;max-width:100%;display:block;';
+            const oldContent = block.querySelector('div:not(.blk-label):not(.resize-handle)');
+            if (oldContent) {
+                oldContent.replaceWith(img);
+            } else {
+                block.insertBefore(img, block.querySelector('.resize-handle'));
+            }
+        }
+
+        img.src = src;
+    }
+
     document.getElementById('logo-input').addEventListener('change', function () {
         const file = this.files[0];
         if (!file) return;
@@ -391,18 +452,7 @@
             panel.src = e.target.result;
             panel.style.display = 'block';
 
-            const logoBlk = document.querySelector('#blk-logo img');
-            if (logoBlk) {
-                logoBlk.src = e.target.result;
-            } else {
-                const logoBlkDiv = document.querySelector('#blk-logo div:not(.blk-label):not(.resize-handle)');
-                if (logoBlkDiv) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.style.cssText = 'max-height:70px;max-width:100%;display:block;';
-                    logoBlkDiv.replaceWith(img);
-                }
-            }
+            ensureLogoBlock(e.target.result);
         };
         reader.readAsDataURL(file);
     });
@@ -474,15 +524,24 @@
         const logoFile = document.getElementById('logo-input').files[0];
         if (logoFile) fd.append('logo', logoFile);
 
-        fetch('/invoice/save', { method:'POST', body:fd })
+        fetch(saveUrl, { method:'POST', body:fd })
         .then(r => r.json())
         .then(data => {
             btn.textContent = '💾 Save Template';
             btn.disabled = false;
             if (data.success) {
+                if (data.save_url) saveUrl = data.save_url;
+                if (data.preview_url) document.getElementById('download-link').href = data.preview_url;
+                if (data.saved_templates_url) {
+                    document.getElementById('templates-link').href = data.saved_templates_url;
+                    document.getElementById('saved-templates-link').href = data.saved_templates_url;
+                }
+                if (data.redirect_url) {
+                    window.history.replaceState({}, '', data.redirect_url);
+                }
                 const msg = document.getElementById('save-msg');
                 msg.style.display = 'block';
-                setTimeout(() => msg.style.display = 'none', 3000);
+                setTimeout(() => msg.style.display = 'none', 5000);
             }
         })
         .catch((error) => {
@@ -493,23 +552,7 @@
         });
     }
 </script>
-<script>
-    // ── Print ──
-function printInvoice() {
-
-    let printContents = document.getElementById('a4-paper').outerHTML;
-    let originalContents = document.body.innerHTML;
-
-    document.body.innerHTML = printContents;
-
-    window.print();
-
-    document.body.innerHTML = originalContents;
-
-    location.reload();
-}
-
-document.querySelector('.btn-pdf').addEventListener('click', printInvoice);
-</script>
 </body>
 </html>
+
+
